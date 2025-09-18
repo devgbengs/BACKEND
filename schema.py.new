@@ -1,0 +1,239 @@
+from typing import Optional, List, Dict, Any
+from sqlmodel import SQLModel, Field
+from datetime import datetime
+from pydantic import EmailStr
+from model.models import (
+    OrderStatus, User, Order, OrderItem, Product, 
+    Category, Role, Tenant
+)
+
+# Create Schemas - Used for API input validation
+class UserCreate(SQLModel):
+    email: EmailStr = Field(...)
+    user_name: str = Field(...)
+    password: str = Field(..., min_length=8)
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    role_names: List[str] = Field(default=[])
+    permissions: List[str] = Field(default=[])
+    tenant_id: Optional[int] = None
+
+class TenantCreate(SQLModel):
+    name: str = Field(...)
+    description: Optional[str] = None
+    domain: str = Field(...)
+    settings: Dict[str, Any] = Field(default={})
+    is_active: bool = Field(default=True)
+
+class ProductCreate(SQLModel):
+    name: str = Field(...)
+    description: Optional[str] = None
+    sku: str = Field(...)
+    price: float = Field(..., gt=0)
+    quantity: int = Field(..., ge=0)
+    category_id: Optional[int] = None
+    metadata: Dict[str, Any] = Field(default={})
+    is_active: bool = Field(default=True)
+    tenant_id: Optional[int] = None
+
+class CategoryCreate(SQLModel):
+    name: str = Field(...)
+    description: Optional[str] = None
+    parent_id: Optional[int] = None
+    metadata: Dict[str, Any] = Field(default={})
+    is_active: bool = Field(default=True)
+    tenant_id: Optional[int] = None
+
+class OrderCreate(SQLModel):
+    user_id: int = Field(...)
+    order_number: str = Field(...)
+    total_amount: float = Field(..., ge=0)
+    status: OrderStatus = Field(default=OrderStatus.PENDING)
+    shipping_address: Dict[str, Any] = Field(...)
+    billing_address: Dict[str, Any] = Field(...)
+    metadata: Dict[str, Any] = Field(default={})
+    tenant_id: Optional[int] = None
+
+class OrderItemCreate(SQLModel):
+    order_id: int = Field(...)
+    product_id: int = Field(...)
+    quantity: int = Field(..., gt=0)
+    unit_price: float = Field(..., gt=0)
+    total_price: float = Field(..., gt=0)
+    metadata: Dict[str, Any] = Field(default={})
+
+class RoleCreate(SQLModel):
+    name: str = Field(...)
+    description: Optional[str] = None
+    permissions: List[str] = Field(default=[])
+    tenant_id: Optional[int] = None
+
+# Update Schemas - Used for partial updates
+class UserUpdate(SQLModel):
+    email: Optional[EmailStr] = None
+    user_name: Optional[str] = None
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=8)
+    is_active: Optional[bool] = None
+    role_names: Optional[List[str]] = None
+    permissions: Optional[List[str]] = None
+
+class TenantUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    domain: Optional[str] = None
+    settings: Optional[Dict[str, Any]] = None
+    is_active: Optional[bool] = None
+
+class ProductUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    sku: Optional[str] = None
+    price: Optional[float] = Field(default=None, gt=0)
+    quantity: Optional[int] = Field(default=None, ge=0)
+    category_id: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+    is_active: Optional[bool] = None
+
+class CategoryUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    parent_id: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+    is_active: Optional[bool] = None
+
+class OrderUpdate(SQLModel):
+    status: Optional[OrderStatus] = None
+    shipping_address: Optional[Dict[str, Any]] = None
+    billing_address: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class OrderItemUpdate(SQLModel):
+    quantity: Optional[int] = Field(default=None, gt=0)
+    unit_price: Optional[float] = Field(default=None, gt=0)
+    total_price: Optional[float] = Field(default=None, gt=0)
+    metadata: Optional[Dict[str, Any]] = None
+
+class RoleUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permissions: Optional[List[str]] = None
+
+# Read Schemas - Used for API responses
+class UserRead(SQLModel):
+    id: int = Field(...)
+    email: EmailStr = Field(...)
+    user_name: str = Field(...)
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    is_active: bool = Field(...)
+    role_names: List[str] = Field(...)
+    permissions: List[str] = Field(...)
+    tenant_id: Optional[int] = None
+    created_at: datetime = Field(...)
+    updated_at: datetime = Field(...)
+
+class TenantRead(SQLModel):
+    id: int = Field(...)
+    name: str = Field(...)
+    description: Optional[str] = None
+    domain: str = Field(...)
+    settings: Dict[str, Any] = Field(...)
+    is_active: bool = Field(...)
+    created_at: datetime = Field(...)
+    updated_at: datetime = Field(...)
+
+class ProductRead(SQLModel):
+    id: int = Field(...)
+    name: str = Field(...)
+    description: Optional[str] = None
+    sku: str = Field(...)
+    price: float = Field(...)
+    quantity: int = Field(...)
+    category_id: Optional[int] = None
+    metadata: Dict[str, Any] = Field(...)
+    is_active: bool = Field(...)
+    tenant_id: Optional[int] = None
+    created_at: datetime = Field(...)
+    updated_at: datetime = Field(...)
+
+class CategoryRead(SQLModel):
+    id: int = Field(...)
+    name: str = Field(...)
+    description: Optional[str] = None
+    parent_id: Optional[int] = None
+    metadata: Dict[str, Any] = Field(...)
+    is_active: bool = Field(...)
+    tenant_id: Optional[int] = None
+    created_at: datetime = Field(...)
+    updated_at: datetime = Field(...)
+
+class RoleRead(SQLModel):
+    id: int = Field(...)
+    name: str = Field(...)
+    description: Optional[str] = None
+    permissions: List[str] = Field(...)
+    tenant_id: Optional[int] = None
+    created_at: datetime = Field(...)
+    updated_at: datetime = Field(...)
+
+class OrderItemRead(SQLModel):
+    id: int = Field(...)
+    order_id: int = Field(...)
+    product_id: int = Field(...)
+    quantity: int = Field(...)
+    unit_price: float = Field(...)
+    total_price: float = Field(...)
+    metadata: Dict[str, Any] = Field(...)
+    created_at: datetime = Field(...)
+    updated_at: datetime = Field(...)
+    product: ProductRead = Field(...)
+
+class OrderRead(SQLModel):
+    id: int = Field(...)
+    user_id: int = Field(...)
+    order_number: str = Field(...)
+    total_amount: float = Field(...)
+    status: OrderStatus = Field(...)
+    shipping_address: Dict[str, Any] = Field(...)
+    billing_address: Dict[str, Any] = Field(...)
+    metadata: Dict[str, Any] = Field(...)
+    tenant_id: Optional[int] = None
+    created_at: datetime = Field(...)
+    updated_at: datetime = Field(...)
+    items: List[OrderItemRead] = Field(default=[])
+
+# Authentication Schemas
+class Token(SQLModel):
+    access_token: str = Field(...)
+    token_type: str = "bearer"
+
+class TokenData(SQLModel):
+    sub: str = Field(...)  # user id or email
+    exp: datetime = Field(...)
+    tenant_id: Optional[int] = None
+    scopes: List[str] = Field(default=[])
+
+class LoginRequest(SQLModel):
+    email: EmailStr = Field(...)
+    password: str = Field(...)
+    tenant_id: Optional[int] = None
+
+# Query Params Schemas
+class PaginationParams(SQLModel):
+    skip: int = Field(default=0, ge=0)
+    limit: int = Field(default=100, le=1000)
+
+class ProductFilterParams(PaginationParams):
+    category_id: Optional[int] = None
+    is_active: Optional[bool] = None
+    min_price: Optional[float] = Field(default=None, ge=0)
+    max_price: Optional[float] = Field(default=None, ge=0)
+    search: Optional[str] = None
+
+class OrderFilterParams(PaginationParams):
+    status: Optional[OrderStatus] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    user_id: Optional[int] = None
