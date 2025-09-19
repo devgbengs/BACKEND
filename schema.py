@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import EmailStr, validator
 from model.models import (
     OrderStatus, User, Order, OrderItem, Product, 
-    Category, Role, Tenant
+    Role, Tenant, StockLevel
 )
 
 # Base Schemas - Used for shared validation rules
@@ -57,6 +57,21 @@ class ProductBase(SQLModel):
     @validator('price')
     def price_precision(cls, v):
         return round(v, 2)
+
+class StockLevelBase(SQLModel):
+    tenant_id: Optional[int] = Field(None, description="ID of the tenant this stock level belongs to")
+    product_id: int = Field(..., description="ID of the product")
+    warehouse_id: int = Field(..., description="ID of the warehouse")
+    quantity: int = Field(..., ge=0, description="Current stock quantity")
+
+class InventoryTransactionBase(SQLModel):
+    tenant_id: Optional[int] = Field(None, description="ID of the tenant this transaction belongs to")
+    product_id: int = Field(..., description="ID of the product")
+    transaction_type: str = Field(..., description="Type of transaction (in, out, adjustment)")
+    quantity: int = Field(..., gt=0, description="Quantity of items")
+    reference_id: Optional[str] = Field(None, max_length=100, description="Reference ID for the transaction")
+    reference_type: Optional[str] = Field(None, max_length=50, description="Type of reference (order, adjustment, etc.)")
+    notes: Optional[str] = Field(None, max_length=255, description="Additional notes")
 
 class CategoryBase(SQLModel):
     name: str = Field(..., min_length=1, max_length=100, description="Category name")
@@ -141,6 +156,12 @@ class TenantCreate(TenantBase):
 class ProductCreate(ProductBase):
     pass
 
+class StockLevelCreate(StockLevelBase):
+    pass
+
+class InventoryTransactionCreate(InventoryTransactionBase):
+    pass
+
 class CategoryCreate(CategoryBase):
     pass
 
@@ -181,6 +202,13 @@ class ProductUpdate(SQLModel):
     metadata: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
 
+class StockLevelUpdate(SQLModel):
+    quantity: Optional[int] = Field(default=None, ge=0)
+
+class InventoryTransactionUpdate(SQLModel):
+    quantity: Optional[int] = Field(default=None, gt=0)
+    notes: Optional[str] = Field(default=None, max_length=255)
+
 class CategoryUpdate(SQLModel):
     name: Optional[str] = None
     description: Optional[str] = None
@@ -219,6 +247,14 @@ class TenantRead(TenantBase):
 class ProductRead(ProductBase):
     id: int = Field(..., description="Product's unique identifier")
     created_at: datetime = Field(..., description="Timestamp of product creation")
+    updated_at: datetime = Field(..., description="Timestamp of last update")
+
+class StockLevelRead(StockLevelBase):
+    id: int = Field(..., description="StockLevel's unique identifier")
+
+class InventoryTransactionRead(InventoryTransactionBase):
+    id: int = Field(..., description="InventoryTransaction's unique identifier")
+    created_at: datetime = Field(..., description="Timestamp of transaction creation")
     updated_at: datetime = Field(..., description="Timestamp of last update")
 
 class CategoryRead(CategoryBase):
@@ -314,5 +350,6 @@ class ErrorResponse(BaseResponse):
     details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
 
 # Update forward refs for response schemas with nested relationships
-OrderRead.update_forward_refs(OrderItemRead=OrderItemRead)
-OrderItemRead.update_forward_refs(ProductRead=ProductRead)
+from typing import ForwardRef
+OrderItemRead.model_rebuild()
+OrderRead.model_rebuild()

@@ -3,10 +3,11 @@ from datetime import datetime
 from sqlmodel import select, and_, or_, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 from model.models import InventoryTransaction, Product
+from schema.inventory_transaction import InventoryTransactionCreate, InventoryTransactionUpdate
 from core.exceptions import ValidationError
 from ..base import CRUDBase
 
-class CRUDInventoryTransaction(CRUDBase[InventoryTransaction]):
+class CRUDInventoryTransaction(CRUDBase[InventoryTransaction, InventoryTransactionCreate, InventoryTransactionUpdate]):
     async def create_transaction(
         self,
         db: AsyncSession,

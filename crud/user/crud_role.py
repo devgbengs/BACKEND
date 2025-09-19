@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlmodel import Session, select
 from model.models import Role
-from schema import RoleCreate, RoleUpdate
+from schema.role import RoleCreate, RoleUpdate
 from ..base import CRUDBase
 
 class CRUDRole(CRUDBase[Role, RoleCreate, RoleUpdate]):

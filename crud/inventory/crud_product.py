@@ -2,8 +2,8 @@ from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, and_, or_, func
-from model.models import Product, OrderItem, Category, Order
-from schema import ProductCreate, ProductUpdate
+from model.models import Product, OrderItem, Order
+from schema.product import ProductCreate, ProductUpdate
 from core.exceptions import ValidationError, InsufficientStockError, NotFoundException
 from ..base import CRUDBase
 
@@ -25,13 +25,13 @@ class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
         self,
         db: AsyncSession,
         *,
-        category_id: int,
+        category: str,
         skip: int = 0,
         limit: int = 100
     ) -> List[Product]:
         query = (
             select(self.model)
-            .where(self.model.category_id == category_id)
+            .where(self.model.category == category)
             .offset(skip)
             .limit(limit)
         )
@@ -58,7 +58,7 @@ class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
         db: AsyncSession,
         *,
         search_term: Optional[str] = None,
-        category_id: Optional[int] = None,
+        category: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
         tenant_id: Optional[int] = None,
@@ -79,8 +79,8 @@ class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
         if tenant_id:
             query = query.where(self.model.tenant_id == tenant_id)
         
-        if category_id:
-            query = query.where(self.model.category_id == category_id)
+        if category:
+            query = query.where(self.model.category == category)
         
         if min_price is not None:
             query = query.where(self.model.price >= min_price)
@@ -197,11 +197,10 @@ class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
         """Get product count by category"""
         query = (
             select(
-                Category.name,
+                self.model.category,
                 func.count(self.model.id).label("product_count")
             )
-            .join(Category)
-            .group_by(Category.name)
+            .group_by(self.model.category)
         )
 
         if tenant_id:

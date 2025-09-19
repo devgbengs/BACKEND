@@ -3,10 +3,11 @@ from datetime import datetime
 from sqlmodel import select, and_, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 from model.models import StockLevel, Product, Warehouse
+from schema.stock_level import StockLevelCreate, StockLevelUpdate
 from core.exceptions import NotFoundException, ValidationError
 from ..base import CRUDBase
 
-class CRUDStockLevel(CRUDBase[StockLevel]):
+class CRUDStockLevel(CRUDBase[StockLevel, StockLevelCreate, StockLevelUpdate]):
     async def get_product_stock(
         self,
         db: AsyncSession,

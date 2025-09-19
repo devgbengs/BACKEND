@@ -7,8 +7,13 @@ from crud.inventory.crud_product import product
 from crud.inventory.crud_stock_level import stock_level
 from crud.inventory.crud_inventory_transaction import inventory_transaction
 from core.database import get_async_session
-from core.security import get_current_active_user
-from model.models import User, Product, StockLevel, InventoryTransaction
+from model.models import Product, StockLevel, InventoryTransaction, User
+from schema.product import ProductCreate, ProductUpdate
+from schema.inventory import InventoryTransactionCreate
+from api.deps import get_current_active_user
+
+# Temporary tenant ID for testing
+TEST_TENANT_ID = 1
 
 router = APIRouter()
 
@@ -16,13 +21,14 @@ router = APIRouter()
 @router.post("/products/", response_model=Product)
 async def create_product(
     *,
-    product_data: dict,
+    product_data: ProductCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session)
 ):
     """Create a new product"""
-    product_data["tenant_id"] = current_user.tenant_id
-    return await product.create_product(db, **product_data)
+    product_dict = product_data.dict()
+    product_dict["tenant_id"] = current_user.tenant_id
+    return await product.create(db, obj_in=product_dict)
 
 @router.get("/products/", response_model=List[Product])
 async def list_products(
@@ -30,7 +36,7 @@ async def list_products(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
-    category_id: Optional[int] = None,
+    category: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     current_user: User = Depends(get_current_active_user),
@@ -40,7 +46,7 @@ async def list_products(
     products, _ = await product.search_products(
         db,
         search_term=search,
-        category_id=category_id,
+        category=category,
         min_price=min_price,
         max_price=max_price,
         tenant_id=current_user.tenant_id,
@@ -65,7 +71,7 @@ async def get_product(
 async def update_product(
     *,
     product_id: int = Path(..., title="The ID of the product to update"),
-    product_data: dict,
+    product_data: ProductUpdate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session)
 ):
@@ -73,7 +79,7 @@ async def update_product(
     db_product = await product.get(db, id=product_id)
     if not db_product or db_product.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Product not found")
-    return await product.update_product(db, product_id=product_id, product_in=product_data)
+    return await product.update(db, db_obj=db_product, obj_in=product_data)
 
 @router.get("/products/low-stock/", response_model=List[Product])
 async def get_low_stock_products(
@@ -157,15 +163,16 @@ async def get_stock_summary(
 @router.post("/transactions/", response_model=InventoryTransaction)
 async def create_transaction(
     *,
-    transaction_data: dict,
+    transaction_data: InventoryTransactionCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_async_session)
 ):
     """Create a new inventory transaction"""
-    transaction_data["tenant_id"] = current_user.tenant_id
-    return await inventory_transaction.create_transaction(
+    transaction_dict = transaction_data.dict()
+    transaction_dict["tenant_id"] = current_user.tenant_id
+    return await inventory_transaction.create(
         db,
-        **transaction_data
+        obj_in=transaction_dict
     )
 
 @router.get("/transactions/product/{product_id}", response_model=List[Dict[str, Any]])

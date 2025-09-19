@@ -1,14 +1,16 @@
+import logging
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
-# Use asyncpg for PostgreSQL
-DATABASE_URL = "postgresql+asyncpg://user:password@localhost/dbname"
+from core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Create async engine
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.DATABASE_URL,
     echo=False,
     future=True,
     pool_pre_ping=True,
@@ -38,9 +40,14 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db():
     """Initialize database with async context"""
-    async with engine.begin() as conn:
-        # Create all tables
-        await conn.run_sync(SQLModel.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            # Create all tables
+            await conn.run_sync(SQLModel.metadata.create_all)
+            logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Error initializing database: {str(e)}")
+        raise
 
 async def dispose_db():
     """Properly dispose of database connections"""

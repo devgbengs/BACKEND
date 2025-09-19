@@ -27,7 +27,11 @@ def create_access_token(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {
+        "exp": expire,
+        "sub": str(subject),
+        "type": "access"  # Added type field
+    }
     encoded_jwt = jwt.encode(
         to_encode,
         settings.SECRET_KEY,
