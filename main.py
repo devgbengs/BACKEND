@@ -66,12 +66,12 @@ app.add_middleware(
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.get("/health")
+@app.get("/health", deprecated=False)
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "api_version": "v1"}
 
-@app.get("/")
+@app.get("/", deprecated=False)
 async def root():
     """Root endpoint"""
     return {"message": "Welcome to Inventory Management System API"}

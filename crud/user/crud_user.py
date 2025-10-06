@@ -20,11 +20,19 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     async def get_by_email(self, db: Session, *, email: str) -> Optional[User]:
         """Get a user by email with roles preloaded"""
-        statement = select(User).options(
-            selectinload(User.roles)
-        ).where(User.email == email)
-        result = await db.execute(statement)
-        return result.unique().scalar_one_or_none()
+        try:
+            print(f"Building query to find user with email: {email}")
+            statement = select(User).options(
+                selectinload(User.roles)
+            ).where(User.email == email)
+            print(f"Executing query: {statement}")
+            result = await db.execute(statement)
+            user = result.unique().scalar_one_or_none()
+            print(f"Query result: {'User found' if user else 'No user found'}")
+            return user
+        except Exception as e:
+            print(f"Error in get_by_email: {str(e)}")
+            raise
 
     async def create(self, db: Session, *, obj_in: Union[UserCreate, Dict[str, Any]]) -> User:
         """Create a new user with proper password hashing"""
@@ -69,12 +77,23 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     async def authenticate(self, db: Session, *, email: str, password: str) -> Optional[User]:
         """Authenticate a user with email and password"""
-        user = await self.get_by_email(db, email=email)
-        if not user:
-            return None
-        if not verify_password(password, user.hashed_password):
-            return None
-        return user
+        try:
+            print(f"Looking up user by email: {email}")
+            user = await self.get_by_email(db, email=email)
+            if not user:
+                print(f"No user found with email: {email}")
+                return None
+            print(f"User found with email {email}, verifying password")
+            
+            if not verify_password(password, user.hashed_password):
+                print(f"Password verification failed for user: {email}")
+                return None
+                
+            print(f"Password verified successfully for user: {email}")
+            return user
+        except Exception as e:
+            print(f"Error in authenticate method: {str(e)}")
+            raise
 
     def is_active(self, user: User) -> bool:
         """Check if a user is active"""
@@ -119,6 +138,33 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
         update_data["updated_at"] = datetime.utcnow()
         return await super().update(db, db_obj=db_obj, obj_in=update_data)
+
+    async def get_users_by_role(
+        self,
+        db: Session,
+        *,
+        tenant_id: int,
+        role: str,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[User]:
+        """Get users with a specific role in a tenant"""
+        from sqlalchemy import text
+        
+        # Using a raw SQL expression for proper JSON array containment check
+        statement = (
+            select(User)
+            .options(selectinload(User.roles))
+            .where(
+                User.tenant_id == tenant_id,
+                text("role_names::jsonb ? :role")
+            )
+            .params(role=role)
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await db.execute(statement)
+        return result.scalars().all()
 
 
 # Create singleton instance

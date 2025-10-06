@@ -14,11 +14,11 @@ import logging
 # Configure logging
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+tenant_router = APIRouter()
 
 # Tenant Management Endpoints
 
-@router.get("/", response_model=List[Tenant])
+@tenant_router.get("/", response_model=List[Tenant])
 async def get_tenants(
     db: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
@@ -37,7 +37,7 @@ async def get_tenants(
     tenants = await tenant.get_multi(db, skip=skip, limit=limit)
     return tenants
 
-@router.post("/register", response_model=dict)
+@tenant_router.post("/register", response_model=dict)
 async def register_tenant_with_admin(
     *,
     db: AsyncSession = Depends(get_async_session),
@@ -115,7 +115,7 @@ async def register_tenant_with_admin(
             detail=f"Error registering tenant: {str(e)}"
         )
 
-@router.get("/{tenant_id}", response_model=Tenant)
+@tenant_router.get("/{tenant_id}", response_model=Tenant)
 async def get_tenant_by_id(
     tenant_id: int,
     db: AsyncSession = Depends(get_async_session),
@@ -139,7 +139,7 @@ async def get_tenant_by_id(
         )
     return db_tenant
 
-@router.put("/{tenant_id}", response_model=Tenant)
+@tenant_router.put("/{tenant_id}", response_model=Tenant)
 async def update_tenant(
     *,
     db: AsyncSession = Depends(get_async_session),
@@ -175,7 +175,7 @@ async def update_tenant(
     updated_tenant = await tenant.update(db, db_obj=db_tenant, obj_in=tenant_in)
     return updated_tenant
 
-@router.delete("/{tenant_id}", response_model=Tenant)
+@tenant_router.delete("/{tenant_id}", response_model=Tenant)
 async def delete_tenant(
     *,
     db: AsyncSession = Depends(get_async_session),
@@ -212,7 +212,7 @@ async def delete_tenant(
 
 # Role Management Endpoints
 
-@router.post("/{tenant_id}/users/{user_id}/roles/{role}", response_model=User)
+@tenant_router.post("/{tenant_id}/users/{user_id}/roles/{role}", response_model=User, deprecated=True)
 async def promote_user_role(
     *,
     db: AsyncSession = Depends(get_async_session),
@@ -275,7 +275,7 @@ async def promote_user_role(
             detail=f"Error promoting user: {str(e)}"
         )
 
-@router.delete("/{tenant_id}/users/{user_id}/roles/{role}", response_model=User)
+@tenant_router.delete("/{tenant_id}/users/{user_id}/roles/{role}", response_model=User, deprecated=True)
 async def revoke_user_role(
     *,
     db: AsyncSession = Depends(get_async_session),
@@ -342,7 +342,7 @@ async def revoke_user_role(
             detail=f"Error revoking role: {str(e)}"
         )
 
-@router.get("/{tenant_id}/roles", response_model=List[RoleResponse])
+@tenant_router.get("/{tenant_id}/roles", response_model=List[RoleResponse])
 async def list_available_roles(
     *,
     db: AsyncSession = Depends(get_async_session),

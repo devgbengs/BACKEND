@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import inventory, tenant
+from .endpoints import inventory, tenant, sales
 
 api_router = APIRouter()
 
@@ -14,4 +14,10 @@ api_router.include_router(
     tenant.router,
     prefix="/tenants",
     tags=["tenant-management"]
+)
+
+api_router.include_router(
+    sales.router,
+    prefix="/sales",
+    tags=["sales-management"]
 )

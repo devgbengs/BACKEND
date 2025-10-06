@@ -19,12 +19,15 @@ async def get_current_user_info(
 async def get_users(
     db: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
+    role: str = None,
     skip: int = 0,
     limit: int = 100
+    
 ) -> Any:
     """
     Retrieve users from the same tenant as the current user.
     Required roles: ["admin", "manager"] or is_superuser=True
+    Optional query parameter: role - Filter users by role
     """
     # Check if user has required roles or is superuser
     if not (current_user.is_superuser or 
@@ -34,11 +37,30 @@ async def get_users(
             detail="Not enough permissions. Required roles: admin or manager"
         )
     
-    # Only return users from the same tenant
-    users = await user.get_multi_by_tenant(
-        db, tenant_id=current_user.tenant_id, skip=skip, limit=limit
-    )
-    return users
+    try:
+        if role:
+            # Get users with specific role
+            users = await user.get_users_by_role(
+                db,
+                tenant_id=current_user.tenant_id,
+                role=role,
+                skip=skip,
+                limit=limit
+            )
+        else:
+            # Get all users from the same tenant
+            users = await user.get_multi_by_tenant(
+                db,
+                tenant_id=current_user.tenant_id,
+                skip=skip,
+                limit=limit
+            )
+        return users
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving users: {str(e)}"
+        )
 
 @router.post("/", response_model=User)
 async def create_user(
@@ -115,7 +137,7 @@ async def get_user_by_id(
     if db_user.tenant_id != current_user.tenant_id:
         raise HTTPException(
             status_code=403,
-            detail="Access denied. User belongs to a different tenant."
+            detail="Access invalid. User does not exist in your business."
         )
     return db_user
 
@@ -147,7 +169,7 @@ async def update_user(
         if db_user.tenant_id != current_user.tenant_id:
             raise HTTPException(
                 status_code=403,
-                detail="Access denied. User belongs to a different tenant."
+                detail="Access invalid. User does not exist in your business."
             )
 
         # Determine update permissions
@@ -206,7 +228,7 @@ async def update_user(
             detail=f"Error updating user: {str(e)}"
         )
 
-@router.delete("/{user_id}", response_model=User)
+@router.delete("/{user_id}", response_model=User, deprecated=True)
 async def delete_user(
     *,
     db: AsyncSession = Depends(get_async_session),

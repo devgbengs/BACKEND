@@ -53,14 +53,22 @@ async def login_access_token(
     - Always include "Bearer " before the token
     - Token expires in 30 minutes
     """
-    # Try to authenticate the user
-    db_user = await user.authenticate(
-        db, email=form_data.username, password=form_data.password
-    )
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
-    elif not db_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    try:
+        # Try to authenticate the user
+        print(f"Attempting to authenticate user with email: {form_data.username}")
+        db_user = await user.authenticate(
+            db, email=form_data.username, password=form_data.password
+        )
+        if not db_user:
+            print(f"Authentication failed for user: {form_data.username}")
+            raise HTTPException(status_code=400, detail="Incorrect email or password")
+        elif not db_user.is_active:
+            print(f"Inactive user attempted to log in: {form_data.username}")
+            raise HTTPException(status_code=400, detail="Inactive user")
+        print(f"User authenticated successfully: {form_data.username}")
+    except Exception as e:
+        print(f"Error during authentication: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     
     # Create access token (for regular API calls)
     access_token = create_access_token(
