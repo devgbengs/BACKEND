@@ -154,8 +154,8 @@ class CRUDStockLevel(CRUDBase[StockLevel, StockLevelCreate, StockLevelUpdate]):
                 "warehouse_id": row.StockLevel.warehouse_id,
                 "warehouse_name": row.warehouse_name,
                 "current_stock": row.StockLevel.quantity,
-                "min_stock": row.Product.min_stock,
-                "max_stock": row.Product.max_stock
+                #"min_stock": row.Product.min_stock,
+                #"max_stock": row.Product.max_stock
             }
             for row in rows
         ]

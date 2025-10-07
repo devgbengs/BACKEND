@@ -162,8 +162,8 @@ class CRUDInventoryTransaction(CRUDBase[InventoryTransaction, InventoryTransacti
                 "product_sku": row.product_sku,
                 "transaction_type": row.InventoryTransaction.transaction_type,
                 "quantity": row.InventoryTransaction.quantity,
-                "reference_id": row.InventoryTransaction.reference_id,
-                "reference_type": row.InventoryTransaction.reference_type,
+                #"reference_id": row.InventoryTransaction.reference_id,
+                #"reference_type": row.InventoryTransaction.reference_type,
                 "notes": row.InventoryTransaction.notes,
                 "created_at": row.InventoryTransaction.created_at
             }

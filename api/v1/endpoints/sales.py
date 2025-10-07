@@ -22,7 +22,7 @@ from api.deps import get_current_active_user
 # Create router
 sales_router = APIRouter()
 
-@sales_router.post("/", response_model=Sale, deprecated= True)
+@sales_router.post("/", response_model=Sale)
 async def create_sale(
     *,
     sale_data: SaleCreate,
@@ -30,6 +30,7 @@ async def create_sale(
     db: AsyncSession = Depends(get_async_session)
 ):
     """Create a new sale"""
+    # need to handle errors properly.
     try:
         return await sale.create_sale(
             db,
@@ -47,6 +48,7 @@ async def create_sale(
             detail=error_message,
             headers={"X-Error": header_message}
         )
+    
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -126,7 +128,7 @@ async def get_user_sales(
         **query_filter
     )
 
-@sales_router.get("/", response_model=List[Sale], deprecated=True)
+@sales_router.get("/", response_model=List[Sale])
 async def list_sales(
     *,
     skip: int = Query(0, ge=0),
@@ -139,8 +141,7 @@ async def list_sales(
     db: AsyncSession = Depends(get_async_session)
 ):
     """List sales with optional filtering"""
-    #query_filter = {"tenant_id": current_user.tenant_id}
-    query_filter = {} # I made the query filter here to be empty to eliminate the tenant error from the line above.
+    query_filter = {"tenant_id": current_user.tenant_id}
     if status:
         query_filter["status"] = status
     if payment_status:
@@ -242,5 +243,11 @@ async def delete_sale(
             status_code=400,
             detail="Can only delete draft sales"
         )
-    
+
+    # delete associated sale items first due to foreign key constraints
+    #items = await sale.get_sale_items(db, sale_id=sale_id)
+    #for item in items:
+    #    await sale.delete_sale_item(db, sale_id=sale_id, item_id=item.id)
+
+
     return await sale.delete(db, id=sale_id)

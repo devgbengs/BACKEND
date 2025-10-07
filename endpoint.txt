@@ -95,3 +95,27 @@ Implementation Notes:
   * Insufficient stock
   * Invalid transaction types
   * Invalid date ranges
+
+  example for ware house create
+  {
+    "tenant_id": 3,
+    "name": "main",
+    "code": "23224"
+   
+  }
+
+
+  example for sales create
+  {
+  "warehouse_id": 9,
+  
+  "items": [
+    {
+      "product_id": 18,
+      "quantity": 1,
+      "unit_price": 1,
+      "discount_percent": 0,
+      "tax_percent": 0
+    }
+  ]
+}

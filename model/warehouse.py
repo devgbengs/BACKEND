@@ -1,6 +1,8 @@
 from typing import Optional, List
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
+#from .stock_level import StockLevel
+#from .inventory_transaction import InventoryTransaction
 
 from .tenant import Tenant
 

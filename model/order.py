@@ -38,14 +38,14 @@ class OrderItem(SQLModel, table=True):
     product_id: int = Field(foreign_key="products.id", index=True)
     quantity: int = Field(...)
     unit_price: float
-    discount_percent: float = Field(default=0.0)
-    discount_amount: float = Field(default=0.0)
-    tax_percent: float = Field(default=0.0)
-    tax_amount: float = Field(default=0.0)
-    subtotal: float
-    total: float
+    #discount_percent: float = Field(default=0.0)
+    #discount_amount: float = Field(default=0.0)
+    #tax_percent: float = Field(default=0.0)
+    #tax_amount: float = Field(default=0.0)
+    #subtotal: float
+    total_price: float
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    #updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
     order: Order = Relationship(back_populates="items")

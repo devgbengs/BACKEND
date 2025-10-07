@@ -18,8 +18,9 @@ class Product(SQLModel, table=True):
     sku: str = Field(unique=True, index=True)
     description: Optional[str] = None
     price: float = Field(default=0.0)
-    min_stock: int = Field(default=0)
-    max_stock: int = Field(default=0)
+    #min_stock: Optional[int] = Field(default=None)
+    #max_stock: Optional[int] = Field(default=None)
+    quantity: int = Field(default=0) # should be made optional upon creation
     category: str = Field(index=True)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -19,11 +19,11 @@ class InventoryTransaction(SQLModel, table=True):
     previous_quantity: int
     new_quantity: int
     reference_number: Optional[str] = Field(None, max_length=100)
-    reference_type: Optional[str] = Field(None, max_length=50)
+    #reference_type: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = Field(None, max_length=255)
     transaction_date: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    #updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
     tenant: Optional[Tenant] = Relationship(back_populates="inventory_transactions")

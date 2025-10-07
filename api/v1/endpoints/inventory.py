@@ -173,16 +173,16 @@ async def delete_product(
         raise HTTPException(status_code=404, detail="Product not found")
     
     # Check if product has any existing transactions
-    transactions = await inventory_transaction.get_product_transactions(
-        db, 
-        product_id=product_id,
-        tenant_id=current_user.tenant_id
-    )
-    if transactions:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot delete product with existing transactions"
-        )
+    #transactions = await inventory_transaction.get_product_transactions(
+    #    db, 
+    #    product_id=product_id,
+    #    tenant_id=current_user.tenant_id
+    #)
+    #if transactions:
+    #    raise HTTPException(
+    #        status_code=400,
+    #        detail="Cannot delete product with existing transactions"
+    #    )
     
     # Check if product has any stock levels
     stock_levels = await stock_level.get_product_stock(
@@ -209,6 +209,7 @@ async def list_stock_levels(
     db: AsyncSession = Depends(get_async_session)
 ):
     """List stock levels for a warehouse"""
+    # works, but I would like to improve on this
     return await stock_level.get_warehouse_stock(
         db,
         warehouse_id=warehouse_id,
@@ -228,6 +229,9 @@ async def update_stock_level(
     db: AsyncSession = Depends(get_async_session)
 ):
     """Update stock level for a product"""
+    # Validate input
+    if operation not in ["add", "subtract"]:
+        raise HTTPException(status_code=400, detail="Invalid operation. Must be 'add' or 'subtract'.")
     return await stock_level.update_stock_level(
         db,
         product_id=product_id,
@@ -245,6 +249,10 @@ async def get_stock_alerts(
     db: AsyncSession = Depends(get_async_session)
 ):
     """Get stock level alerts"""
+    # validate threshold
+    if threshold is not None and threshold < 0:
+        raise HTTPException(status_code=400, detail="Invalid threshold value")
+
     return await stock_level.get_low_stock_alerts(
         db,
         tenant_id=current_user.tenant_id,
@@ -570,7 +578,7 @@ async def update_warehouse(
         obj_in=warehouse_in
     )
 
-@inventory_router.delete("/warehouses/{warehouse_id}", response_model=Warehouse, deprecated=True)
+@inventory_router.delete("/warehouses/{warehouse_id}", response_model=Warehouse)
 async def delete_warehouse(
     *,
     warehouse_id: int = Path(..., title="The ID of the warehouse to delete"),
@@ -578,33 +586,34 @@ async def delete_warehouse(
     db: AsyncSession = Depends(get_async_session)
 ):
     """Delete a warehouse"""
+    
     db_warehouse = await warehouse.get(db, id=warehouse_id)
     if not db_warehouse or db_warehouse.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Warehouse not found")
     
     # Check if warehouse has any stock levels
-    #stock_levels = await stock_level.get_by_warehouse(
-    #    db, 
-    #    warehouse_id=warehouse_id,
-    #    tenant_id=current_user.tenant_id
-    #)
-    #if stock_levels:
-    #    raise HTTPException(
-    #        status_code=400,
-    #        detail="Cannot delete warehouse with existing stock levels"
-    #    )
+    stock_levels = await stock_level.get_warehouse_stock(
+        db, 
+        warehouse_id=warehouse_id,
+        tenant_id=current_user.tenant_id
+    )
+    if stock_levels:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete warehouse with existing stock levels"
+        )
     
-    # Check if warehouse has any transactions
-    #transactions = await inventory_transaction.get_recent_transactions(
-    #    db,
-    #    #warehouse_id=warehouse_id,
-    #    tenant_id=current_user.tenant_id
-    #)
-    #if transactions:
-    #    raise HTTPException(
-    #        status_code=400,
-    #        detail="Cannot delete warehouse with existing transactions"
-    #    )
+     #Check if warehouse has any transactions
+    transactions = await inventory_transaction.get_recent_transactions(
+        db,
+        #warehouse_id=warehouse_id,
+        tenant_id=current_user.tenant_id
+    )
+    if transactions:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete warehouse with existing transactions"
+        )
     
     return await warehouse.delete(db, id=warehouse_id)
 
