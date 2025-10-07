@@ -31,6 +31,29 @@ class SaleItemRead(SaleItemBase):
     subtotal: float
     total: float
 
+class SaleItemUpdate(SQLModel):
+    """Schema for updating sale items"""
+    quantity: Optional[int] = Field(None, gt=0, description="New quantity of the product")
+    unit_price: Optional[float] = Field(None, gt=0, description="New price per unit")
+    discount_percent: Optional[float] = Field(None, ge=0, le=100, description="New discount percentage")
+    tax_percent: Optional[float] = Field(None, ge=0, description="New tax percentage")
+
+    @validator('quantity')
+    def validate_quantity(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError('Quantity must be greater than 0')
+        return v
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "quantity": 3,
+                "unit_price": 24.99,
+                "discount_percent": 5,
+                "tax_percent": 7
+            }
+        }
+
 class SaleBase(SQLModel):
     """Base schema for sales"""
     customer_id: Optional[int] = Field(None, description="ID of the customer")

@@ -5,6 +5,7 @@ from .warehouse import Warehouse
 from .stock_level import StockLevel
 from .inventory_transaction import InventoryTransaction
 from .session import Session
+from .user_session import UserSession
 from .role import Role
 from .order import Order, OrderItem
 from .sale import Sale, SaleItem
@@ -24,6 +25,7 @@ __all__ = [
     "StockLevel",
     "InventoryTransaction",
     "Session",
+    "UserSession",
     "Role",
     "Order",
     "OrderItem",

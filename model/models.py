@@ -12,6 +12,7 @@ from model import (
     StockLevel,
     InventoryTransaction,
     Session,
+    UserSession,
     Role,
     Order,
     OrderItem,
