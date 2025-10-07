@@ -42,3 +42,57 @@ Security event tracking
 Data change history
 Access logs
 System operation logs
+
+
+#
+work on the delete endpoint for sales.
+
+# Working endpoint
+
+- product endpoints are working
+- warehouse endpoints are working
+- transactions endpoints are working
+- all endpoints except delete in sales are working
+
+#########################
+
+the description on the update tenant isnt working
+
+promote user role not        working
+delete warehouse not working
+ ####################
+
+ # Basic filters
+results = await crud.get_multi(
+    db,
+    tenant_id=1,
+    user_id=5,
+    status="active"
+)
+
+# Price range and search
+products = await product_crud.get_multi(
+    db,
+    min_price=10.0,
+    max_price=50.0,
+    search_query="laptop"
+)
+
+# Multiple filters with dates
+sales = await sale_crud.get_multi(
+    db,
+    customer_id=123,
+    payment_status="paid",
+    date_filters={"sale_date": ("gte", start_date)},
+    sort_by="created_at",
+    sort_desc=True
+)
+
+# Inventory transactions
+transactions = await inventory_crud.get_multi(
+    db,
+    warehouse_id=1,
+    product_id=5,
+    transaction_type="stock_in",
+    date_filters={"created_at": ("gte", last_week)}
+)

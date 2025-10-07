@@ -65,3 +65,25 @@ class RoleResponse(SQLModel):
                 "description": "Full administrative access within the tenant"
             }
         }
+
+class UserRoleUpdate(SQLModel):
+    """Schema for updating user roles"""
+    roles_to_add: List[Role]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "roles_to_add": ["manager", "staff"]
+            }
+        }
+
+class UserRoleRevoke(SQLModel):
+    """Schema for revoking user roles"""
+    roles_to_remove: List[Role]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "roles_to_remove": ["manager", "staff"]
+            }
+        }

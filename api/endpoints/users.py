@@ -5,6 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from api.deps import get_async_session, get_current_user
 from crud.user.crud_user import user
 from schema.user import UserCreate, UserUpdate, User
+from schema.role import UserRoleUpdate, UserRoleRevoke, ROLE_PERMISSIONS
 
 router = APIRouter()
 
@@ -228,7 +229,7 @@ async def update_user(
             detail=f"Error updating user: {str(e)}"
         )
 
-@router.delete("/{user_id}", response_model=User, deprecated=True)
+@router.delete("/{user_id}", response_model=User)
 async def delete_user(
     *,
     db: AsyncSession = Depends(get_async_session),
@@ -238,6 +239,14 @@ async def delete_user(
     """
     Delete a user from the same tenant.
     Required roles: ["admin"] or is_superuser=True
+    
+    This will:
+    1. Delete all user sessions
+    2. Delete all user sales
+    3. Delete all user orders
+    4. Delete the user record
+    
+    All operations are performed in a transaction to ensure data consistency.
     """
     # Check if user has required roles or is superuser
     if not (current_user.is_superuser or "admin" in current_user.role_names):
@@ -274,5 +283,168 @@ async def delete_user(
             detail="Cannot delete yourself"
         )
     
-    deleted_user = await user.remove(db, id=user_id)
-    return deleted_user
+    try:
+        deleted_user = await user.remove(db, id=user_id)
+        if not deleted_user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found or already deleted"
+            )
+        return deleted_user
+    except ValueError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+@router.post("/{user_id}/roles", response_model=User)
+async def promote_user_roles(
+    *,
+    db: AsyncSession = Depends(get_async_session),
+    user_id: int,
+    role_update: UserRoleUpdate,
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Promote a user by adding new roles. Existing roles are preserved.
+    Required roles: ["admin"] or is_superuser=True
+    
+    Only admins can:
+    - Add the admin role
+    - Modify roles of other admins
+    
+    Superusers can:
+    - Add any role
+    - Modify roles of any user (except other superusers)
+    """
+    # Check if user has required roles
+    if not (current_user.is_superuser or "admin" in current_user.role_names):
+        raise HTTPException(
+            status_code=403,
+            detail="Not enough permissions. Required role: admin"
+        )
+    
+    # Get the target user
+    db_user = await user.get(db, id=user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+    
+    # Check tenant ownership
+    if db_user.tenant_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. User belongs to a different tenant."
+        )
+    
+    # Prevent non-superusers from modifying superuser roles
+    if db_user.is_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="Only superusers can modify superuser roles"
+        )
+    
+    # Prevent non-superusers from adding admin role
+    roles_to_add = [role.value for role in role_update.roles_to_add]
+    if "admin" in roles_to_add and not current_user.is_superuser:
+        if not "admin" in current_user.role_names:
+            raise HTTPException(
+                status_code=403,
+                detail="Only admins can grant admin role"
+            )
+    
+    try:
+        updated_user = await user.update_roles(
+            db,
+            db_obj=db_user,
+            roles_to_add=roles_to_add
+        )
+        return updated_user
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error updating user roles: {str(e)}"
+        )
+
+@router.delete("/{user_id}/roles", response_model=User)
+async def revoke_user_roles(
+    *,
+    db: AsyncSession = Depends(get_async_session),
+    user_id: int,
+    role_revoke: UserRoleRevoke,
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """
+    Revoke roles from a user. User must maintain at least one role.
+    Required roles: ["admin"] or is_superuser=True
+    
+    Only admins can:
+    - Revoke the admin role
+    - Modify roles of other admins
+    
+    Superusers can:
+    - Revoke any role
+    - Modify roles of any user (except other superusers)
+    """
+    # Check if user has required roles
+    if not (current_user.is_superuser or "admin" in current_user.role_names):
+        raise HTTPException(
+            status_code=403,
+            detail="Not enough permissions. Required role: admin"
+        )
+    
+    # Get the target user
+    db_user = await user.get(db, id=user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+    
+    # Check tenant ownership
+    if db_user.tenant_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. User belongs to a different tenant."
+        )
+    
+    # Prevent non-superusers from modifying superuser roles
+    if db_user.is_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="Only superusers can modify superuser roles"
+        )
+    
+    # Prevent non-admins from revoking admin role
+    roles_to_remove = [role.value for role in role_revoke.roles_to_remove]
+    if "admin" in roles_to_remove and not current_user.is_superuser:
+        if not "admin" in current_user.role_names:
+            raise HTTPException(
+                status_code=403,
+                detail="Only admins can revoke admin role"
+            )
+    
+    try:
+        updated_user = await user.revoke_roles(
+            db,
+            db_obj=db_user,
+            roles_to_remove=roles_to_remove
+        )
+        return updated_user
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error revoking user roles: {str(e)}"
+        )
