@@ -1,8 +1,9 @@
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import text
 
 from core.config import settings
 from core.security import (
@@ -10,7 +11,7 @@ from core.security import (
     create_refresh_token,
     verify_password
 )
-from api.deps import get_async_session, get_current_refresh_user
+from api.deps import get_async_session, get_current_refresh_user, get_current_user
 from crud.user.crud_user import user
 from schema.token import Token
 
@@ -121,3 +122,57 @@ async def refresh_token(
         "token_type": "bearer",
         "_note": "Use the new access_token for API calls. Save the refresh_token for your next refresh."
     }
+    
+@router.post("/logout")
+async def logout(
+    db: AsyncSession = Depends(get_async_session),
+    current_user = Depends(get_current_user),
+    token: str = Depends(OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login/access-token"))
+) -> dict:
+    """
+    Logout the current user by blacklisting their token.
+    
+    This endpoint:
+    1. Takes the current access token
+    2. Adds it to the blacklist in user_sessions table
+    3. Returns a success message
+    
+    The token will no longer be valid for any API calls.
+    """
+    try:
+        # Add the token to the blacklist
+        await db.execute(
+            text("""
+                INSERT INTO user_sessions (
+                    user_id, 
+                    token, 
+                    expires_at,
+                    is_valid,
+                    created_at
+                )
+                VALUES (
+                    :user_id, 
+                    :token, 
+                    NOW() + INTERVAL '1 day',
+                    false,
+                    NOW()
+                )
+            """),
+            {
+                "user_id": current_user.id,
+                "token": token
+            }
+        )
+        await db.commit()
+        
+        return {
+            "message": "Successfully logged out",
+            "status": "success"
+        }
+        
+    except Exception as e:
+        print(f"Error during logout: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error occurred while logging out"
+        )

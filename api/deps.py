@@ -34,6 +34,26 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # First check if token is blacklisted
+        from sqlalchemy import text
+        blacklist_check = await db.execute(
+            text("""
+                SELECT EXISTS(
+                    SELECT 1 FROM user_sessions 
+                    WHERE token = :token 
+                    AND is_valid = false
+                )
+            """),
+            {"token": token}
+        )
+        is_blacklisted = blacklist_check.scalar()
+        if is_blacklisted:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been invalidated",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )

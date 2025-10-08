@@ -3,7 +3,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 # Import models and settings
-from model.models import SQLModel
+from sqlmodel import SQLModel
 from core.config import settings
 
 # this is the Alembic Config object

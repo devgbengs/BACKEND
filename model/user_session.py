@@ -10,6 +10,7 @@ class UserSession(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     user_id: int = Field(..., foreign_key="users.id", index=True)
     refresh_token: str = Field(..., sa_column=Column(String(length=512), unique=True))
+    token: Optional[str] = Field(default=None, sa_column=Column(String(length=512), unique=True, index=True))
     is_valid: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime = Field(...)

@@ -96,3 +96,10 @@ transactions = await inventory_crud.get_multi(
     transaction_type="stock_in",
     date_filters={"created_at": ("gte", last_week)}
 )
+
+
+to do
+I would like the deletion of users account and all related data to be
+ when the tenant account is been deleted.
+ For users within then tenant, if deleted, they should be deactivated, 
+ while related data in all other tables stay as is, 
